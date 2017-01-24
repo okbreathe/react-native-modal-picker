@@ -24,6 +24,7 @@ const propTypes = {
     data: PropTypes.array,
     open: PropTypes.bool,
     onChange: PropTypes.func,
+    onClose: PropTypes.func,
     initValue: PropTypes.string,
     style: View.propTypes.style,
     selectStyle: View.propTypes.style,
@@ -42,6 +43,7 @@ const defaultProps = {
     data: [],
     open: false,
     onChange: ()=> {},
+    onClose: ()=> {},
     initValue: 'Select me!',
     style: {},
     selectStyle: {},
@@ -64,6 +66,7 @@ export default class ModalPicker extends BaseComponent {
 
         this._bind(
             'onChange',
+            'onClose',
             'open',
             'close',
             'renderChildren'
@@ -73,7 +76,8 @@ export default class ModalPicker extends BaseComponent {
             animationType: 'slide',
             modalVisible: false,
             transparent: false,
-            selected: 'please select'
+            selected: 'please select',
+			selectedObject: {},
         };
     }
 
@@ -89,10 +93,21 @@ export default class ModalPicker extends BaseComponent {
       this.setState({modalVisible: nextProps.open});
     }
 
+	componentWillUpdate(nextProps, nextState){
+		if (nextState.modalVisible != this.state.modalVisible && nextState.modalVisible === false)
+		{
+			this.onClose(nextState.selectedObject);
+		}
+	}
+
     onChange(item) {
         this.props.onChange(item);
-        this.setState({selected: item.label});
+        this.setState({selected: item.label, selectedObject: item});
         this.close();
+    }
+
+    onClose(item) {
+        this.props.onClose(item);
     }
 
     close() {
