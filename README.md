@@ -84,11 +84,13 @@ class SampleApp extends Component {
 ## Props
 
 * `data - []` required, array of objects with a unique key and label
+* `selectedValue` optional, value of the currently selected object. The key of the data object
 * `open - boolean` optional, boolean that triggers whether or not the dialog is shown
 * `style - object` optional, style definitions for the root element
 * `onChange - function` optional, callback function, when the users has selected an option
 * `onClose - function` optional, callback function, when the modal is closed
-* `initValue - string` optional, text that is initially shown on the button
+* `disabled - boolean` optional, whether the picker should be disabled
+* `placeholder - string` optional, text that is shown when no item is selected
 * `cancelText - string` optional, text of the cancel button
 * `selectStyle - object` optional, style definitions for the select element (available in default mode only!)
 * `selectTextStyle - object` optional, style definitions for the select element (available in default mode only!)
@@ -99,4 +101,5 @@ class SampleApp extends Component {
 * `optionTextStyle - object` optional, style definitions for the option text element
 * `cancelStyle - object` optional, style definitions for the cancel element
 * `cancelTextStyle - object` optional, style definitions for the cancel text element
-* `optionContainer - object` optional, style definitions for the options container
+* `optionContainerStyle - object` optional, style definitions for the options container
+* `disabledStyle - object` optional, style definitions for the disabled select

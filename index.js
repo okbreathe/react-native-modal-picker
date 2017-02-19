@@ -1,205 +1,186 @@
-'use strict';
-
-import React,{
-    PropTypes
-} from 'react';
-
+import React, { PropTypes } from 'react'
 import {
-    View,
-    StyleSheet,
-    Dimensions,
-    Modal,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    Platform
-} from 'react-native';
+  View,
+  StyleSheet,
+  Dimensions,
+  Modal,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Platform
+} from 'react-native'
 
-import styles from './style';
-import BaseComponent from './BaseComponent';
+import styles from './style'
 
-let componentIndex = 0;
+let componentIndex = 0
 
-const propTypes = {
-    data: PropTypes.array,
-    open: PropTypes.bool,
-    onChange: PropTypes.func,
-    onClose: PropTypes.func,
-    initValue: PropTypes.string,
-    style: View.propTypes.style,
-    selectStyle: View.propTypes.style,
-    optionStyle: View.propTypes.style,
-    optionTextStyle: Text.propTypes.style,
-    sectionStyle: View.propTypes.style,
-    sectionTextStyle: Text.propTypes.style,
-    cancelStyle: View.propTypes.style,
-    cancelTextStyle: Text.propTypes.style,
-    overlayStyle: View.propTypes.style,
-    optionContainer: View.propTypes.style,
-    cancelText: PropTypes.string,
-    disabled: PropTypes.bool
-};
+export default class ModalPicker extends React.Component {
+  state = {
+    animationType: 'slide',
+    modalVisible: false,
+    transparent: false,
+    selectedObject: {},
+  }
 
-const defaultProps = {
-    data: [],
-    open: false,
-    onChange: ()=> {},
-    onClose: ()=> {},
-    initValue: 'Select me!',
-    style: {},
-    selectStyle: {},
-    optionStyle: {},
-    optionTextStyle: {},
-    sectionStyle: {},
-    sectionTextStyle: {},
-    cancelStyle: {},
-    cancelTextStyle: {},
-    overlayStyle: {},
-    optionContainer: {},
-    cancelText: 'cancel',
-    disabled: false
-};
+  componentDidMount() {
+    this.setState({
+      selectedText: this.props.placeholder,
+      cancelText: this.props.cancelText
+    })
+  }
 
-export default class ModalPicker extends BaseComponent {
+  componentWillReceiveProps(nextProps) {
+    const state = { modalVisible: nextProps.open }
 
-    constructor() {
+    if (nextProps.placeholder != this.props.placeholder) state.selectedText = nextProps.placeholder
 
-        super();
-
-        this._bind(
-            'onChange',
-            'onClose',
-            'open',
-            'close',
-            'renderChildren'
-        );
-
-        this.state = {
-            animationType: 'slide',
-            modalVisible: false,
-            transparent: false,
-            selected: 'please select',
-			selectedObject: {},
-        };
-    }
-
-    componentDidMount() {
-        this.setState({selected: this.props.initValue});
-        this.setState({cancelText: this.props.cancelText});
-    }
-
-    componentWillReceiveProps(nextProps) {
-      if (nextProps.initValue != this.props.initValue) {
-        this.setState({selected: nextProps.initValue});
+    if (this.dataChanged(nextProps.data) || this.selectedValueChanged(nextProps.selectedValue)) {
+      const item = this.getSelectedItem(nextProps.selectedValue)
+      if (item) {
+        state.selectedText = item.label
+        state.selectedObject = item
       }
-      this.setState({modalVisible: nextProps.open});
     }
 
-	componentWillUpdate(nextProps, nextState){
-		if (nextState.modalVisible != this.state.modalVisible && nextState.modalVisible === false)
-		{
-			this.onClose(nextState.selectedObject);
-		}
-	}
+    this.setState(state)
+  }
 
-    onChange(item) {
-        this.props.onChange(item);
-        this.setState({selected: item.label, selectedObject: item});
-        this.close();
+  componentWillUpdate(nextProps, nextState){
+    if (nextState.modalVisible != this.state.modalVisible && nextState.modalVisible === false) {
+      this.onClose(nextState.selectedObject)
     }
+  }
 
-    onClose(item) {
-        this.props.onClose(item);
-    }
+  onChange = (item) => {
+    this.props.onChange(item)
+    this.setState({ selectedText: item.label, selectedObject: item })
+    this.close()
+  }
 
-    close() {
-      this.setState({
-        modalVisible: false
-      });
-    }
+  onClose = (item) => this.props.onClose(item)
 
-    open() {
-      this.setState({
-        modalVisible: true
-      });
-    }
+  close = () => this.setState({ modalVisible: false })
 
-    renderSection(section) {
-        return (
-            <View key={section.key} style={[styles.sectionStyle,this.props.sectionStyle]}>
-                <Text style={[styles.sectionTextStyle,this.props.sectionTextStyle]}>{section.label}</Text>
+  open = () => this.setState({ modalVisible: true })
+
+  getSelectedItem = (key) => this.props.data.find(d => d.key == key)
+
+  dataChanged = (data) => data && data.length && data != this.props.data
+
+  selectedValueChanged = (value) => value && value != this.props.selectedValue
+
+  renderSection(section) {
+    return (
+      <View key={section.key} style={[styles.sectionStyle, this.props.sectionStyle]}>
+        <Text style={[styles.sectionTextStyle, this.props.sectionTextStyle]}>{section.label}</Text>
+      </View>
+    )
+  }
+
+  renderOption(option) {
+    return (
+      <TouchableOpacity key={option.key} onPress={()=>this.onChange(option)}>
+        <View style={[styles.optionStyle, this.props.optionStyle]}>
+          <Text style={[styles.optionTextStyle,this.props.optionTextStyle]}>{option.label}</Text>
+        </View>
+      </TouchableOpacity>
+    )
+  }
+
+  renderOptionList() {
+    const options = this.props.data.map((item) => {
+      return item.section
+        ? this.renderSection(item)
+        : this.renderOption(item)
+    })
+
+    return (
+      <View style={[styles.overlayStyle, this.props.overlayStyle]} key={'modalPicker'+(componentIndex++)}>
+        <View style={[styles.optionContainer, this.props.optionContainerStyle]}>
+          <ScrollView keyboardShouldPersistTaps="always">
+            <View style={{paddingHorizontal:10}}>
+              {options}
             </View>
-        );
-    }
-
-    renderOption(option) {
-        return (
-            <TouchableOpacity key={option.key} onPress={()=>this.onChange(option)}>
-                <View style={[styles.optionStyle, this.props.optionStyle]}>
-                    <Text style={[styles.optionTextStyle,this.props.optionTextStyle]}>{option.label}</Text>
-                </View>
-            </TouchableOpacity>)
-    }
-
-    renderOptionList() {
-        var options = this.props.data.map((item) => {
-            if (item.section) {
-                return this.renderSection(item);
-            } else {
-                return this.renderOption(item);
-            }
-        });
-
-        return (
-            <View style={[styles.overlayStyle, this.props.overlayStyle]} key={'modalPicker'+(componentIndex++)}>
-                <View style={[styles.optionContainer, this.props.optionContainer]}>
-                    <ScrollView keyboardShouldPersistTaps="always">
-                        <View style={{paddingHorizontal:10}}>
-                            {options}
-                        </View>
-                    </ScrollView>
-                </View>
-                <View style={styles.cancelContainer}>
-                    <TouchableOpacity onPress={this.close}>
-                        <View style={[styles.cancelStyle, this.props.cancelStyle]}>
-                            <Text style={[styles.cancelTextStyle,this.props.cancelTextStyle]}>{this.props.cancelText}</Text>
-                        </View>
-                    </TouchableOpacity>
-                </View>
-
-            </View>);
-    }
-
-    renderChildren() {
-
-        if(this.props.children) {
-            return this.props.children;
-        }
-        return (
-            <View style={[styles.selectStyle, this.props.selectStyle]}>
-                <Text style={[styles.selectTextStyle, this.props.selectTextStyle]}>{this.state.selected}</Text>
+          </ScrollView>
+        </View>
+        <View style={styles.cancelContainer}>
+          <TouchableOpacity onPress={this.close}>
+            <View style={[styles.cancelStyle, this.props.cancelStyle]}>
+              <Text style={[styles.cancelTextStyle,this.props.cancelTextStyle]}>{this.props.cancelText}</Text>
             </View>
-        );
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
+  }
+
+  renderChildren = () => {
+    if (this.props.children) {
+      return this.props.children
     }
+    return (
+      <View style={[styles.selectStyle, this.props.selectStyle, this.props.disabled ? this.props.disabledStyle : {}]}>
+        <Text style={[styles.selectTextStyle, this.props.selectTextStyle]}>{this.state.selectedText}</Text>
+      </View>
+    )
+  }
 
-    render() {
+  render() {
+    const dp = (
+      <Modal transparent={true} ref="modal" visible={this.state.modalVisible} onRequestClose={this.close} animationType={this.state.animationType}>
+        {this.renderOptionList()}
+      </Modal>
+    )
 
-        const dp = (
-          <Modal transparent={true} ref="modal" visible={this.state.modalVisible} onRequestClose={this.close} animationType={this.state.animationType}>
-          {this.renderOptionList()}
-          </Modal>
-        );
-
-        return (
-            <View style={this.props.style}>
-                {dp}
-                <TouchableOpacity onPress={this.open} disabled={this.props.disabled}>
-                    {this.renderChildren()}
-                </TouchableOpacity>
-            </View>
-        );
-    }
+    return (
+      <View style={this.props.style}>
+        {dp}
+        <TouchableOpacity onPress={this.open} disabled={this.props.disabled}>
+          {this.renderChildren()}
+        </TouchableOpacity>
+      </View>
+    )
+  }
 }
 
-ModalPicker.propTypes = propTypes;
-ModalPicker.defaultProps = defaultProps;
+ModalPicker.propTypes = {
+  data:                 PropTypes.array,
+  open:                 PropTypes.bool,
+  onChange:             PropTypes.func,
+  onClose:              PropTypes.func,
+  placeholder:          PropTypes.string,
+  style:                View.propTypes.style,
+  selectStyle:          View.propTypes.style,
+  optionStyle:          View.propTypes.style,
+  optionTextStyle:      Text.propTypes.style,
+  sectionStyle:         View.propTypes.style,
+  sectionTextStyle:     Text.propTypes.style,
+  cancelStyle:          View.propTypes.style,
+  cancelTextStyle:      Text.propTypes.style,
+  overlayStyle:         View.propTypes.style,
+  optionContainerStyle: View.propTypes.style,
+  cancelText:           PropTypes.string,
+  disabledStyle:        View.propTypes.style,
+  disabled:             PropTypes.bool
+}
+ModalPicker.defaultProps = {
+  data:                 [],
+  open:                 false,
+  onChange:             () => {},
+  onClose:              () => {},
+  placeholder:          'Please Select',
+  style:                {},
+  selectStyle:          {},
+  optionStyle:          {},
+  optionTextStyle:      {},
+  sectionStyle:         {},
+  sectionTextStyle:     {},
+  cancelStyle:          {},
+  cancelTextStyle:      {},
+  overlayStyle:         {},
+  optionContainerStyle: {},
+  disabledStyle:        {},
+  selectedValue:        null,
+  cancelText:           'Cancel',
+  disabled:             false
+}
